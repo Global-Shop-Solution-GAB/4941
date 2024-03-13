@@ -1,0 +1,209 @@
+Program.Sub.ScreenSU.Start
+gui.Form..create
+gui.Form..caption("Positive Pay")
+gui.Form..size(2265,2535)
+gui.Form..position(0,0)
+gui.Form..event(unload,unload)
+gui.Form..alwaysontop(False)
+gui.Form..fontname("Arial")
+gui.Form..fontsize(8)
+gui.Form..forecolor(0)
+gui.Form..fontstyle(,,,,)
+gui.Form..BackColor(-2147483633)
+gui.Form..controlbox(True)
+gui.Form..maxbutton(False)
+gui.Form..minbutton(False)
+gui.Form..mousepointer(0)
+gui.Form..moveable(True)
+gui.Form..sizeable(False)
+gui.Form..ShowInTaskBar(True)
+gui.Form..titlebar(True)
+gui.Form.lbl_dtpFrom.create(label,"From",True,1800,200,1,100,135,True,0,Arial,8,-2147483633,0)
+gui.Form.dtpFrom.create(datepicker)
+gui.Form.dtpFrom.visible(True)
+gui.Form.dtpFrom.size(1800,345)
+gui.Form.dtpFrom.zorder(0)
+gui.Form.dtpFrom.position(100,335)
+gui.Form.dtpFrom.enabled(True)
+gui.Form.dtpFrom.checkbox(False)
+gui.Form.lbl_dtpTo.create(label,"To",True,1800,200,1,100,765,True,0,Arial,8,-2147483633,0)
+gui.Form.dtpTo.create(datepicker)
+gui.Form.dtpTo.visible(True)
+gui.Form.dtpTo.size(1800,345)
+gui.Form.dtpTo.zorder(0)
+gui.Form.dtpTo.position(100,965)
+gui.Form.dtpTo.enabled(True)
+gui.Form.dtpTo.checkbox(False)
+gui.Form.chkPayroll.create(checkbox)
+gui.Form.chkPayroll.caption("Payroll checks")
+gui.Form.chkPayroll.visible(False)
+gui.Form.chkPayroll.size(1800,300)
+gui.Form.chkPayroll.zorder(0)
+gui.Form.chkPayroll.position(100,2200)
+gui.Form.chkPayroll.enabled(False)
+gui.Form.chkPayroll.alignment(0)
+gui.Form.chkPayroll.fontname("Arial")
+gui.Form.chkPayroll.fontsize(8)
+gui.Form.chkAP.create(checkbox)
+gui.Form.chkAP.caption("AP checks")
+gui.Form.chkAP.visible(False)
+gui.Form.chkAP.size(1800,300)
+gui.Form.chkAP.zorder(0)
+gui.Form.chkAP.position(100,2000)
+gui.Form.chkAP.enabled(False)
+gui.Form.chkAP.alignment(0)
+gui.Form.chkAP.fontname("Arial")
+gui.Form.chkAP.fontsize(8)
+gui.Form.cmdSubmit.create(button)
+gui.Form.cmdSubmit.caption("Process")
+gui.Form.cmdSubmit.visible(True)
+gui.Form.cmdSubmit.size(1000,360)
+gui.Form.cmdSubmit.zorder(0)
+gui.Form.cmdSubmit.position(100,1595)
+gui.Form.cmdSubmit.enabled(True)
+gui.Form.cmdSubmit.fontname("Arial")
+gui.Form.cmdSubmit.fontsize(8)
+gui.Form.cmdSubmit.event(click,cmdsubmit_click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+V.Local.sError.Declare(String)
+
+'DRH 1/29/2018: Whittle Flooring Company Limited 
+' This is will be a custom GAB script that will export employee payroll information to a CSV file
+
+V.Local.sIcon.Declare(String)
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.String.Build("{0}\GAB\GAS\gss2.ico",V.Caller.PluginsDir,v.Local.sIcon)
+Gui.Form..Icon(V.Local.sIcon)
+Gui.Form..Show
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4941_Payroll_Export.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.cmdsubmit_click.Start
+F.Intrinsic.Control.SetErrorHandler("cmdsubmit_click_Err")
+F.Intrinsic.Control.ClearErrors
+V.Local.sError.Declare(String)
+
+'this will be redone to suit the 	Whittle Flooring Company Limited
+V.Local..BulkDeclareDate( dDateFrom, dDateTo)
+V.Local..BulkDeclareString(sSql,sFile, sFilePath,sDate, sFilter, sTime) 
+V.Local..BulkDeclareLong(iC, iLine, iRow)
+V.Local..BulkDeclareFloat(fHours, fMin, fTemp)
+
+V.Local.dDateFrom.Set(V.Screen.Form!dtpFrom.Value)
+V.Local.dDateTo.Set(V.Screen.Form!dtpTo.Value)
+
+V.Local.sDate.Set(V.Ambient.Date)
+F.Intrinsic.String.Format(V.Ambient.Date,"YYYYMMDD",V.Local.sDate)
+V.Local.sTime.Set(V.Ambient.Time)
+F.Intrinsic.String.Replace(V.Local.sTime, "1/1/0001 ", "", V.Local.sTime)
+F.Intrinsic.String.Replace(V.Local.sTime, ":", "_", V.Local.sTime)
+F.Intrinsic.String.Replace(V.Local.sTime, " ", "", V.Local.sTime)
+
+'set file path
+F.Intrinsic.String.Build("{0}\PayrollExport_{1}_{2}.txt", V.Caller.FilesDir, V.Local.sDate, V.Local.sTime, V.Local.sFilePath)
+
+F.Intrinsic.Control.If(V.Local.dDateFrom,>,V.Local.dDateTo)
+	F.Intrinsic.UI.Msgbox("Selected date range is invalid.","GAB Error")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+Gui.Form..Visible(False)
+
+'select all information
+F.Intrinsic.String.Build("Select * From PYRL_LABOR_XFER Where Cast(Substring(BEG_CYMD, 1,4)+ '-' + SUBSTRING(BEG_CYMD, 5,2)+ '-' +SUBSTRING(BEG_CYMD, 7,2) as Date) >= '{0}' And  Cast(Substring(END_CYMD, 1,4)+ '-' + SUBSTRING(END_CYMD, 5,2)+ '-' +SUBSTRING(END_CYMD, 7,2) as Date) <= '{1}'", V.Local.dDateFrom.PervasiveDate, V.Local.dDateTo.PervasiveDate, V.Local.ssql)
+F.Data.DataTable.CreateFromSQL("ALL", "con",V.Local.sSql)
+'fill in rate and pay_type
+F.Data.DataTable.AddColumn("ALL", "RATE", "String")
+F.Data.Dictionary.CreateFromSQL("dict", "con", "Select EMPLOYEE, RATE From EMPLOYEE_MSTR")
+F.Data.Dictionary.SetDefaultReturn("dict", "")
+F.Data.DataTable.FillFromDictionary("ALL", "dict", "EMPLOYEE", "RATE")
+F.Data.Dictionary.Close("dict")
+F.Data.DataTable.AddColumn("ALL", "PAY_TYPE", "String")
+F.Data.Dictionary.CreateFromSQL("dict", "con", "Select EMPLOYEE, PAY_TYPE From EMPLOYEE_MSTR")
+F.Data.Dictionary.SetDefaultReturn("dict", "")
+F.Data.DataTable.FillFromDictionary("ALL", "dict", "EMPLOYEE", "PAY_TYPE")
+F.Data.Dictionary.Close("dict")
+'expression column for float
+F.Data.DataTable.AddExpressionColumn("ALL", "HoursFloat", "Float", "HOURS")
+'select employess to loop through
+F.Intrinsic.String.Build("Select Distinct Employee From PYRL_LABOR_XFER Where Cast(Substring(BEG_CYMD, 1,4)+ '-' + SUBSTRING(BEG_CYMD, 5,2)+ '-' +SUBSTRING(BEG_CYMD, 7,2) as Date) >= '{0}' And  Cast(Substring(END_CYMD, 1,4)+ '-' + SUBSTRING(END_CYMD, 5,2)+ '-' +SUBSTRING(END_CYMD, 7,2) as Date) <= '{1}'", V.Local.dDateFrom.PervasiveDate, V.Local.dDateTo.PervasiveDate, V.Local.ssql)
+F.Data.DataTable.CreateFromSQL("EMP", "con",V.Local.sSql)
+
+'build file, looop through EMP
+F.Intrinsic.Control.For(V.Local.iC, 0, V.DataTable.EMP.RowCount--, 1)
+	F.Intrinsic.String.Build("EMPLOYEE = '{0}'", V.DataTable.EMP(V.Local.iC).EMPLOYEE!FieldValTrim, V.Local.sFilter)
+	F.Data.DataView.Create("ALL", "ALL_V", 22, V.Local.sFilter , "") 
+	F.Data.DataTable.Compute("ALL", "Sum(HoursFloat)", V.Local.sFilter,V.Local.fHours)
+	
+	F.Intrinsic.String.Split(V.Local.fHours, ".", V.Local.fMin)
+	F.Intrinsic.String.Build(".{0}", V.Local.fMin(1), V.Local.fTemp)
+	'Round Float Up To Nearest .25
+	F.Intrinsic.Control.If(V.Local.fTemp, >=, .1, "AND", V.Local.fTemp, <=, .25)
+		V.Local.fTemp.Set(.25)
+	F.Intrinsic.Control.ElseIf(V.Local.fTemp, >=, .26, "AND", V.Local.fTemp, <=, .5)
+		V.Local.fTemp.Set(.5)
+	F.Intrinsic.Control.ElseIf(V.Local.fTemp, >=, .51, "AND", V.Local.fTemp, <=, .75)
+		V.Local.fTemp.Set(.75)
+	F.Intrinsic.Control.ElseIf(V.Local.fTemp, >=, .76, "AND", V.Local.fTemp, <=, .00)
+		V.Local.fTemp.Set(.00)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.Math.Add(V.Local.fMin(0), V.Local.fTemp, V.Local.fHours)
+	
+	F.Intrinsic.String.Build("{0}{1},{2},{3},{4},{5},{6},{7}{8}",V.Local.sFile, V.DataView.ALL!ALL_V(0).EMPLOYEE!FieldValTrim, V.DataView.ALL!ALL_V(0).PAY_TYPE!FieldValTrim, "", "", V.Local.fHours, V.DataView.ALL!ALL_V(0).RATE!FieldValTrim, V.DataView.ALL!ALL_V(0).PAY_FREQ!FieldValTrim, V.Ambient.NewLine, V.Local.sFile)
+	F.Data.DataView.close("ALL", "ALL_V")
+F.Intrinsic.Control.Next(V.Local.iC)
+
+F.Intrinsic.File.String2File(V.Local.sFilePath, V.Local.sFile)
+
+'EMPLOYEE_MSTR, RATE, FREQUENCY, PAY_TYPE
+'''''''''Employee Ref: This would be Employee Number (eg 00001 or 00002) This is top left when you open pay roll
+'''''''''Pay type code: I am waiting for an answer on this but it could be the pay type box (H) for hours.
+'''''''''Permanent Value: Ignore
+'''''''''Temporary Value: Ignore
+'''''''''Hours and Minutes (decimal): This will be actual time worked for the daily balancing. Eg 8 hours. (this is to be 0.25 hr increments).
+'''''''''Rate of Pay: This is pay rate on the employee screen 
+'''''''''Payroll Group: I am waiting for an answer on this but I think it will be the Freq box (W) weekly.
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("cmdsubmit_click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4941_Payroll_Export.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdsubmit_click.End
+
+Program.Sub.Unload.Start
+F.Intrinsic.Control.SetErrorHandler("Unload_Err")
+F.Intrinsic.Control.ClearErrors
+V.Local.sError.Declare(String)
+
+Gui.Form..Visible(False)
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Label("Unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4941_Payroll_Export.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.End
+
+Function.Intrinsic.Control.EndIf
+Program.Sub.Unload.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$$}$12:00:00 AM$}$False
+Program.Sub.Comments.End
